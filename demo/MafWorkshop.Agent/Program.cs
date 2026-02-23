@@ -9,6 +9,8 @@ using Microsoft.Extensions.AI;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var config = builder.Configuration;
+
 // Observability 및 Traceability를 위한 Service Defaults 추가하기
 builder.AddServiceDefaults();
 
@@ -16,8 +18,16 @@ builder.AddServiceDefaults();
 // IChatClient? chatClient = ChatClientFactory.CreateChatClient(builder.Configuration);
 
 // IChatClient 인스턴스 등록하기
-builder.AddOpenAIClient("chat")
-       .AddChatClient();
+if (config["LlmProvider"] == "Ollama")
+{
+    builder.AddOllamaApiClient("chat")
+           .AddChatClient();
+}
+else
+{
+    builder.AddOpenAIClient("chat")
+           .AddChatClient();
+}
 // builder.Services.AddChatClient(chatClient);
 
 builder.AddAIAgent(

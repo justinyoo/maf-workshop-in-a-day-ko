@@ -41,12 +41,34 @@ public static class LlmResourceFactory
 
         source = provider switch
         {
+            "Ollama" => source.AddOllamaResource(config, provider),
             "GitHubModels" => source.AddGitHubModelsResource(config, provider),
             "AzureOpenAI" => source.AddAzureOpenAIResource(config, provider),
             _ => throw new NotSupportedException($"The specified LLM provider '{provider}' is not supported.")
         };
 
         return source;
+    }
+
+    // AddOllamaResource 메서드 추가하기
+    private static IResourceBuilder<ProjectResource> AddOllamaResource(this IResourceBuilder<ProjectResource> source, IConfiguration config, string provider)
+    {
+        var ollama = config.GetSection("Ollama");
+        var port = Convert.ToInt32(ollama["Port"] ?? "11434");
+        var model = ollama["Model"] ?? throw new InvalidOperationException("Missing configuration: Ollama:Model");
+
+        Console.WriteLine();
+        Console.WriteLine($"\tUsing {provider}: {model}");
+        Console.WriteLine();
+
+        var chat = source.ApplicationBuilder
+                         .AddOllama(name: "ollama", port: port)
+                         .WithDataVolume()
+                         .AddModel(name: "chat", modelName: model);
+
+        return source.WithEnvironment("LlmProvider", provider)
+                     .WithReference(chat)
+                     .WaitFor(chat);
     }
 
     // AddGitHubModelsResource 메서드 추가하기
@@ -67,7 +89,8 @@ public static class LlmResourceFactory
                          .AddGitHubModel(name: "chat", model: model)
                          .WithApiKey(apiKey);
 
-        return source.WithReference(chat)
+        return source.WithEnvironment("LlmProvider", provider)
+                     .WithReference(chat)
                      .WaitFor(chat);
     }
 
@@ -91,7 +114,8 @@ public static class LlmResourceFactory
                          .WithApiKey(apiKey)
                          .AddModel(name: "chat", model: deploymentName);
 
-        return source.WithReference(chat)
+        return source.WithEnvironment("LlmProvider", provider)
+                     .WithReference(chat)
                      .WaitFor(chat);
     }
 }
