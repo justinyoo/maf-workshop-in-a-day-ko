@@ -54,7 +54,6 @@ public static class LlmResourceFactory
     private static IResourceBuilder<ProjectResource> AddOllamaResource(this IResourceBuilder<ProjectResource> source, IConfiguration config, string provider)
     {
         var ollama = config.GetSection("Ollama");
-        var port = Convert.ToInt32(ollama["Port"] ?? "11434");
         var model = ollama["Model"] ?? throw new InvalidOperationException("Missing configuration: Ollama:Model");
 
         Console.WriteLine();
@@ -62,7 +61,8 @@ public static class LlmResourceFactory
         Console.WriteLine();
 
         var chat = source.ApplicationBuilder
-                         .AddOllama(name: "ollama", port: port)
+                         .AddOllama("ollama")
+                         .WithImageTag("latest")
                          .WithDataVolume()
                          .AddModel(name: "chat", modelName: model);
 
